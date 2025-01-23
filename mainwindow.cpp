@@ -61,15 +61,15 @@ void server::startListening(){
     isListening = true;
     qDebug() << "Waiting for a connection...\n";
 
-        // Accept an incoming connection
-        SOCKET clientSocket = accept(socket, nullptr, nullptr);
-        if (clientSocket == INVALID_SOCKET){
-            qDebug() << "Accept failed: " << WSAGetLastError() << "\n";
-        }
-        else{
-            //handshake
-            std::thread(&server::handleClient, this, clientSocket).detach();
-        }
+    // Accept an incoming connection
+    SOCKET clientSocket = accept(socket, nullptr, nullptr);
+    if (clientSocket == INVALID_SOCKET){
+        qDebug() << "Accept failed: " << WSAGetLastError() << "\n";
+    }
+    else{
+        //handshake
+        std::thread(&server::handleClient, this, clientSocket).detach();
+    }
 }
 
 void server::handleClient(SOCKET clientSocket){

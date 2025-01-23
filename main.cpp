@@ -2,29 +2,29 @@
 
 vector<objectInfo> buildInfo(QVector3D baseSize, QVector3D supportSize, QVector3D armSize, int armSegments){
     objectInfo baseInfo = {
-       baseSize,
-       QVector3D(0.0f, 0.0f, 0.0f),
-       QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
-       QVector3D(0.0f, 0.0f, 0.0f),
-       QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
-       Qt::black
-    },
-    supportInfo = {
-        supportSize,
-        QVector3D(supportSize.x()/2, 0.0f, -(supportSize.z()-baseSize.z())/2.0),
-        QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
-        QVector3D(baseSize.x()/2.0, (baseSize.y()-supportSize.y())/2.0, 0.0f),
-        QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
-        Qt::black
-    },
-    armInfo = {
-        armSize,
-        QVector3D(0.0f, 0.0f, armSize.z()/2.0),
-        QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
-        QVector3D(0.0f, 0.0f, armSize.z()/2.0),
-        QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
-        Qt::black
-    };
+                   baseSize,
+                   QVector3D(0.0f, 0.0f, 0.0f),
+                   QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
+                   QVector3D(0.0f, 0.0f, 0.0f),
+                   QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
+                   Qt::black
+               },
+        supportInfo = {
+            supportSize,
+            QVector3D(supportSize.x()/2, 0.0f, -(supportSize.z()-baseSize.z())/2.0),
+            QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
+            QVector3D(baseSize.x()/2.0, (baseSize.y()-supportSize.y())/2.0, 0.0f),
+            QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
+            Qt::black
+        },
+        armInfo = {
+            armSize,
+            QVector3D(0.0f, 0.0f, armSize.z()/2.0),
+            QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
+            QVector3D(0.0f, 0.0f, armSize.z()/2.0),
+            QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f),
+            Qt::black
+        };
     vector<objectInfo> info{baseInfo, supportInfo, supportInfo};
     info[2].pivotTranslation.setX(-supportInfo.pivotTranslation.x());
     info[2].meshTranslation.setX(-supportInfo.meshTranslation.x());
@@ -48,17 +48,27 @@ int main(int argc, char* argv[]){
         3. Probar video de OpenCV en ventanas nueva
         4. Implementar ROTAS
     */
+
+    /*  ACTUAL ToDo:
+        1. Drop downs para subsections de izquierda
+        2. Source scanner
+        3. Refactorizar
+        4. Implementar ROS2 topics
+        5. Resize sections
+    */
+
+
     vector<objectInfo> info = buildInfo(QVector3D(5.0f, 8.0f, 1.0f), QVector3D(1.0f, 1.0f, 3.0f), QVector3D(0.5f, 0.5f, 2.0f), 3);
     //Constructors
     robot robot(rootEntity, info, 3);
     axis axis(rootEntity, QVector2D(0.1f, 10.0f));
-    server winsock;
+    /*server winsock;
     QObject::connect(&winsock, &server::packetReceived, [&robot](vector<int> packets){
         qDebug() << "Received: " << packets[0] << " " << packets[1] << " " << packets[2] << "\n";
         robot.updatePivot(0, (float)packets[0], 0);
         robot.updatePivot(1, (float)packets[1], 0);
         robot.updatePivot(3, (float)packets[2], 0);
-    });
+    });*/
 
     //Camera
     Qt3DRender::QCamera *camera = view->camera();
@@ -113,7 +123,7 @@ int main(int argc, char* argv[]){
     pivot5Slider->setMaximumWidth(200);
 
     //qDebug() << "opening webcam...\n";
-    cv::Mat fram = cv::imread("pamache.png");
+    cv::Mat fram = cv::imread("C:/Users/nabet/Desktop/bruh/pamache.png");
     //cv::VideoCapture cap = cv::VideoCapture(0);
     //cv::Mat frame;
     //cap >> frame;
@@ -123,13 +133,18 @@ int main(int argc, char* argv[]){
     label_image->setPixmap(pixel);
     label_image->setMaximumSize(640, 360);
 
+    /*
 
-    QWidget *container = QWidget::createWindowContainer(view);
+    QWidget *view_container = QWidget::createWindowContainer(view);
     QVBoxLayout *layout = new QVBoxLayout();
     QHBoxLayout *screen = new QHBoxLayout();
-    layout->addWidget(container);
+
+    view_container->setStyleSheet("border: 2px solid red;");
+    layout->addWidget(view_container);
+
     QLabel *label = new QLabel("Pivot 1");
     label->setMaximumSize(700, 30);
+    label->setStyleSheet("border: 2px solid red;");
     layout->addWidget(label);
     layout->addWidget(pivot1Slider);
     label = new QLabel("Pivot 2");
@@ -149,9 +164,15 @@ int main(int argc, char* argv[]){
     layout->addWidget(label);
     layout->addWidget(pivot5Slider);
 
+    QWidget *left_container = new QWidget;
+    left_container->setStyleSheet("border: 2px solid white;");
+    left_container->setLayout(layout);
+
+
     //screen->addWidget(container);
-    screen->addWidget(label_image);
-    screen->addLayout(layout);
+    //screen->addWidget(label_image);
+    screen->addWidget(left_container);
+    //screen->addLayout(layout);
 
     QObject::connect(&winsock, &server::imgReceived, [&robot, &label_image](cv::Mat frame){
         QImage img= QImage((uchar*) frame.data, frame.cols, frame.rows, frame.step, QImage::Format_BGR888);
@@ -159,10 +180,71 @@ int main(int argc, char* argv[]){
         label_image->setPixmap(pixel);
     });
 
+*/
+
+    /*
+    QHBoxLayout *mainLayout = new QHBoxLayout;
+
+    // Left section
+    QWidget *leftSection = new QWidget;
+    leftSection->setStyleSheet("border: 2px solid white;");
+    QGridLayout *leftLayout = new QGridLayout;
+    leftLayout->setSpacing(0);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+
+    // Load and add images to the 2x2 grid in the left section
+    for (int row = 0; row < 2; ++row) {
+        for (int col = 0; col < 2; ++col) {
+            cv::Mat image = cv::imread("C:/Users/nabet/Desktop/bruh/pamache.png"); // Replace with your image path
+            if (image.empty()) {
+                qDebug("Failed to load image for left section!");
+                return -1;
+            }
+            QImage qImage = QImage(image.data, image.cols, image.rows, image.step, QImage::Format_BGR888);
+            QLabel *imageLabel = new QLabel;
+            imageLabel->setPixmap(QPixmap::fromImage(qImage).scaled(480, 270, Qt::KeepAspectRatio)); // Scale to fit
+            imageLabel->setAlignment(Qt::AlignCenter);
+            leftLayout->addWidget(imageLabel, row, col);
+        }
+    }
+    leftSection->setLayout(leftLayout);
+
+    // Right section
+    QWidget *rightSection = new QWidget;
+    rightSection->setStyleSheet("border: 2px solid red;");
+    QVBoxLayout *rightLayout = new QVBoxLayout;
+    rightLayout->setSpacing(0);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+
+    // Load and add images to the 2 vertical subsections in the right section
+    for (int i = 0; i < 2; ++i) {
+        cv::Mat image = cv::imread("C:/Users/nabet/Desktop/bruh/pamache.png"); // Replace with your image path
+        if (image.empty()) {
+            qDebug("Failed to load image for right section!");
+            return -1;
+        }
+        QImage qImage = QImage(image.data, image.cols, image.rows, image.step, QImage::Format_BGR888);
+        QLabel *imageLabel = new QLabel;
+        imageLabel->setPixmap(QPixmap::fromImage(qImage).scaled(320, 360, Qt::KeepAspectRatio)); // Scale to fit
+        imageLabel->setAlignment(Qt::AlignCenter);
+        rightLayout->addWidget(imageLabel);
+    }
+    rightSection->setLayout(rightLayout);
+
+    // Add sections to the main layout
+    mainLayout->addWidget(leftSection, 3); // 3/4 of the screen width
+    mainLayout->addWidget(rightSection, 1); // 1/4 of the screen width
+
     QWidget mainWindow;
-    mainWindow.setLayout(screen);
+    //mainWindow.setLayout(screen);
     mainWindow.resize(1280, 720);
-    mainWindow.show();
+    mainWindow.setLayout(mainLayout);
+    mainWindow.show();*/
+
+    MainWindow window;
+    window.setWindowTitle("maybe");
+    window.resize(1280, 720); // Set resolution for the left section
+    window.show();
 
     return app.exec();
 }
