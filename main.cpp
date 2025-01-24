@@ -50,11 +50,12 @@ int main(int argc, char* argv[]){
     */
 
     /*  ACTUAL ToDo:
-        1. Drop downs para subsections de izquierda
-        2. Source scanner
-        3. Refactorizar
-        4. Implementar ROS2 topics
-        5. Resize sections
+        1. Drop downs para subsections de izquierda ✓
+        2. Show video sources ✓
+        3. Source scanner ✓
+        4. Refactorizar
+        5. Implementar ROS2 topics
+        6. Resize sections
     */
 
 

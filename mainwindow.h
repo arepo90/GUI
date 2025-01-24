@@ -12,7 +12,7 @@
 #include <QSlider>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <QCamera>
+#include <Qt3DRender/QCamera>
 #include <QLabel>
 #include <QImage>
 #include <QObject>
@@ -20,6 +20,9 @@
 #include <QPushButton>
 #include <QMesh>
 #include <QForwardRenderer>
+#include <QComboBox>
+#include <QStandardItemModel>
+#include <QTimer>
 
 #include <opencv2/opencv.hpp>
 #include <winsock2.h>
@@ -94,12 +97,166 @@ private:
     QLabel *tagLabel;
 };
 
+
+class SubsectionWidget : public QWidget {
+    Q_OBJECT
+public:
+    explicit SubsectionWidget(int deviceID, const QStringList &options, QWidget *parent = nullptr)
+        : QWidget(parent), comboBox(new QComboBox), videoCapture(deviceID), label(new QLabel("No Selection")) {
+        if(!videoCapture.isOpened()) {
+            label->setText("Unable to access camera");
+        }
+        else{
+            label->setText("Loading...");
+        }
+        comboBox->addItems(options);
+        comboBox->setCurrentIndex(-1);
+
+        label->setFixedSize(320, 240); // Adjust as needed
+        label->setStyleSheet("border: 1px solid black; background-color: lightgray;");
+        label->setAlignment(Qt::AlignCenter);
+
+        // Timer to update the video feed
+        timer = new QTimer(this);
+        connect(timer, &QTimer::timeout, this, &SubsectionWidget::updateFrame);
+        timer->start(30); // 30 ms ~ 33 FPS
+
+        QVBoxLayout *layout = new QVBoxLayout;
+        layout->addWidget(comboBox);
+        layout->addWidget(label);
+        setLayout(layout);
+        // Connect the dropdown to update the label
+        connect(comboBox, &QComboBox::currentIndexChanged, this, [this]() {
+                /*QString selectedText = comboBox->currentText();
+                label->setText(selectedText.isEmpty() ? "No Selection" : selectedText);*/
+            if(videoCapture.isOpened()){    //npi si esto funciona
+                    videoCapture.release();
+            }
+                emit selectionChanged();
+        });
+    }
+
+    QString getCurrentSelection() const {
+        return comboBox->currentText();
+    }
+
+    void updateAvailableOptions(const QSet<QString> &usedOptions) {
+        auto * model = qobject_cast<QStandardItemModel*>(comboBox->model());
+        assert(model);
+        if(!model) return;
+
+        for (int i = 0; i < comboBox->count(); ++i) {
+            QString option = comboBox->itemText(i);
+            if (usedOptions.contains(option)) {
+                //comboBox->setItemData(i, QColor(Qt::gray), Qt::ForegroundRole); // Gray out
+                auto * item = model->item(i);
+                assert(item);
+                if(!item) return;
+                item->setEnabled(false);
+            } else {
+                //comboBox->setItemData(i, QColor(Qt::black), Qt::ForegroundRole); // Reset color
+                auto * item = model->item(i);
+                assert(item);
+                if(!item) return;
+                item->setEnabled(true);
+            }
+        }
+    }
+
+    ~SubsectionWidget() {
+        if (videoCapture.isOpened()) {
+            videoCapture.release();
+        }
+    }
+signals:
+    void selectionChanged();
+private slots:
+    void updateFrame() {
+        if (!videoCapture.isOpened()) return;
+
+        cv::Mat frame;
+        videoCapture >> frame; // Capture a frame
+        if (frame.empty()) return;
+
+        // Convert the frame to RGB format for QImage
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+        QImage image(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
+
+        // Display the frame on the QLabel
+        label->setPixmap(QPixmap::fromImage(image).scaled(label->size(), Qt::KeepAspectRatio));
+    }
+private:
+    QComboBox *comboBox;
+    QLabel *label;
+    cv::VideoCapture videoCapture;
+    QTimer *timer;
+};
+
+/*
+class SubsectionWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    explicit SubsectionWidget(int deviceID, QWidget *parent = nullptr)
+        : QWidget(parent), videoCapture(deviceID), label(new QLabel) {
+        // Check if the video capture device is opened successfully
+        if (!videoCapture.isOpened()) {
+            label->setText("Unable to access camera");
+        } else {
+            label->setText("Loading...");
+        }
+
+        // Set up the label
+        label->setFixedSize(320, 240); // Adjust as needed
+        label->setStyleSheet("border: 1px solid black; background-color: lightgray;");
+        label->setAlignment(Qt::AlignCenter);
+
+        // Set up the layout
+        QVBoxLayout *layout = new QVBoxLayout;
+        layout->addWidget(label);
+        setLayout(layout);
+
+        // Timer to update the video feed
+        timer = new QTimer(this);
+        connect(timer, &QTimer::timeout, this, &SubsectionWidget::updateFrame);
+        timer->start(30); // 30 ms ~ 33 FPS
+    }
+
+    ~SubsectionWidget() {
+        if (videoCapture.isOpened()) {
+            videoCapture.release();
+        }
+    }
+
+private slots:
+    void updateFrame() {
+        if (!videoCapture.isOpened()) return;
+
+        cv::Mat frame;
+        videoCapture >> frame; // Capture a frame
+        if (frame.empty()) return;
+
+        // Convert the frame to RGB format for QImage
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+        QImage image(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
+
+        // Display the frame on the QLabel
+        label->setPixmap(QPixmap::fromImage(image).scaled(label->size(), Qt::KeepAspectRatio));
+    }
+
+private:
+    cv::VideoCapture videoCapture;
+    QLabel *label;
+    QTimer *timer;
+};
+*/
+
 class MainWindow : public QWidget {
     Q_OBJECT
 public:
     MainWindow(QWidget *parent = nullptr) : QWidget(parent) {
 
-        Qt3DExtras::Qt3DWindow *view = new Qt3DExtras::Qt3DWindow();
+        /*Qt3DExtras::Qt3DWindow *view = new Qt3DExtras::Qt3DWindow();
         view->defaultFrameGraph()->setClearColor(QColor("#202020"));
         QWidget *container = QWidget::createWindowContainer(view);
         container->setMinimumSize(QSize(320, 360));
@@ -198,7 +355,7 @@ public:
         // Main layout
         mainLayout = new QHBoxLayout;
 
-        /*QWidget *leftSection = new QWidget;
+        QWidget *leftSection = new QWidget;
         leftSection->setStyleSheet("border: 2px solid white;");
         leftLayout = new QGridLayout;
         leftLayout->setSpacing(0);
@@ -231,7 +388,8 @@ public:
             rightLayout->addWidget(imageLabel);
         //}
         rightSection->setLayout(rightLayout);*/
-        QWidget *leftSection = new QWidget;
+
+        /*QWidget *leftSection = new QWidget;
         leftSection->setStyleSheet("border: 2px solid red;");
         leftLayout = new QVBoxLayout;
         leftLayout->setSpacing(0);
@@ -267,15 +425,47 @@ public:
         rightLayout->addWidget(pivot1Slider);
         rightLayout->addWidget(label2);
         rightLayout->addWidget(pivot1Slider2);
-        rightSection->setLayout(rightLayout);
+        rightSection->setLayout(rightLayout);*/
 
-        mainLayout->addWidget(leftSection, 3); // 3/4 of the screen width
-        mainLayout->addWidget(rightSection, 1); // 1/4 of the screen width
+        //mainLayout->addWidget(leftSection, 2); // 3/4 of the screen width
+        //mainLayout->addWidget(rightSection, 1); // 1/4 of the screen width
+
+        /*
+        for (int i = 0; i < 4; ++i) {
+            SubsectionWidget *widget = new SubsectionWidget(i, this);
+            subsectionWidgets.append(widget);
+        }
+
+        // Layout for 2x2 grid
+        QGridLayout *gridLayout = new QGridLayout;
+        gridLayout->addWidget(subsectionWidgets[0], 0, 0);
+        gridLayout->addWidget(subsectionWidgets[1], 0, 1);
+        gridLayout->addWidget(subsectionWidgets[2], 1, 0);
+        gridLayout->addWidget(subsectionWidgets[3], 1, 1);
+
+        setLayout(gridLayout);*/
 
         //mainLayout->addWidget(container);
-        setLayout(mainLayout);
+        //setLayout(mainLayout);
     }
 private slots:
+    /*void updateDropdowns() {
+        QSet<QString> usedOptions;
+
+        // Collect selected options
+        for (auto *widget : subsectionWidgets) {
+            QString selection = widget->getCurrentSelection();
+            if (!selection.isEmpty()) {
+                usedOptions.insert(selection);
+            }
+        }
+
+        // Update all widgets
+        for (auto *widget : subsectionWidgets) {
+            widget->updateAvailableOptions(usedOptions);
+        }
+    }*/
+
     void handleSectionClick(int id) {
         static bool fullScreenMode = false;
         static int activeSectionId = -1;
@@ -287,7 +477,7 @@ private slots:
                 if (sections[i]->getId() == id) {
                     sections[i]->setFullScreenMode(true);
                     sections[i]->setParent(nullptr);
-                    //leftLayout->addWidget(sections[i], 0, 0, 2, 2); // Enlarge to fill left section
+                    leftLayout->addWidget(sections[i], 0, 0, 2, 2); // Enlarge to fill left section
                 } else {
                     sections[i]->hide();
                 }
@@ -298,7 +488,7 @@ private slots:
             for (int i = 0; i < sections.size(); ++i) {
                 sections[i]->setFullScreenMode(false);
                 sections[i]->show();
-                //leftLayout->addWidget(sections[i], i / 2, i % 2); // Return to grid
+                leftLayout->addWidget(sections[i], i / 2, i % 2); // Return to grid
             }
             fullScreenMode = false;
             activeSectionId = -1;
@@ -308,14 +498,14 @@ private:
     QHBoxLayout *mainLayout;
     //QGridLayout *leftLayout;
     QVBoxLayout *rightLayout;
-    QVBoxLayout *leftLayout;
+    QGridLayout *leftLayout;
     QList<ImageSection *> sections;
     Qt3DCore::QTransform *pivotTransform2;
     Qt3DCore::QTransform *pivotTransform3;
     QLabel *label;
     QLabel *label2;
     QLabel *label3;
-    QVector3D pos;
+    QList<SubsectionWidget *> subsectionWidgets;
 };
 
 /*QWidget mainWindow;

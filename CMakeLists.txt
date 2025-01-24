@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(bruh LANGUAGES CXX)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS
     Widgets
     3DCore
@@ -10,6 +10,8 @@ find_package(Qt6 REQUIRED COMPONENTS
     3DLogic
     3DExtras
     3DAnimation
+    Multimedia
+    MultimediaWidgets
 )
 find_package(OpenCV REQUIRED)
 
@@ -32,6 +34,8 @@ target_link_libraries(bruh PRIVATE
     Qt6::3DLogic
     Qt6::3DExtras
     Qt6::3DAnimation
+    Qt6::Multimedia
+    Qt6::MultimediaWidgets
     ws2_32
     ${OpenCV_LIBS}
 )
