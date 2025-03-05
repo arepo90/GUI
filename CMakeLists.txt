@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.19)
 project(bruh LANGUAGES CXX)
 
+set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+#set(CMAKE_PREFIX_PATH "C:/vcpkg/installed/x64-windows" CACHE STRING "")
+
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS
     Widgets
@@ -14,13 +17,15 @@ find_package(Qt6 REQUIRED COMPONENTS
     MultimediaWidgets
 )
 find_package(OpenCV REQUIRED)
+find_package(portaudio CONFIG REQUIRED)
+find_package(Opus CONFIG REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 qt_standard_project_setup()
 
 qt_add_executable(bruh
-    WIN32 MACOSX_BUNDLE
+    WIN32
     main.cpp
     mainwindow.cpp
     mainwindow.h
@@ -38,6 +43,9 @@ target_link_libraries(bruh PRIVATE
     Qt6::MultimediaWidgets
     ws2_32
     ${OpenCV_LIBS}
+    portaudio
+    Opus::opus
+    Xinput
 )
 
 include(GNUInstallDirs)
